@@ -9,9 +9,32 @@ import { createTodo } from '../../businessLogic/todos'
 export const handler = middy(
   async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     const newTodo: CreateTodoRequest = JSON.parse(event.body)
+    const timestamp = new Date().toISOString()
     // TODO: Implement creating a new TODO item
 
-    return undefined
+    const todoPayload = {
+      "createdAt": timestamp,
+      ...newTodo,
+      "done": false,
+      "attachmentUrl": "http://example.com/image.png"
+    }
+
+    await this.dynamoDBClient
+      .put({
+        TableName: process.env.TODOS_TABLE,
+        Todo: todoPayload
+      })
+      .promise()
+
+    return {
+      statusCode: 201,
+      headers: {
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        todoPayload
+      })
+    }
 )
 
 handler.use(
