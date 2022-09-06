@@ -27,6 +27,8 @@ provider:
     TODOS_CREATED_AT_INDEX: CreatedAtIndex
     ATTACHMENT_S3_BUCKET: serverless-c4-todo-images-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
+    AUTH_0_SECRET_ID: Auth0Secret-$(self:provider.stage)
+    AUTH_0_SECRET_FIELD: auth0Secret
 
   logs:
     # Enable API Gateway logs
@@ -46,6 +48,19 @@ provider:
             - dynamodb:PutItem
             - dynamodb:GetItem
           Resource: "*"
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - secretmanager:GetSecretValue
+          Resource: !Ref Auth0Secret
+        - Effect: Allow
+          Action:
+            - kms:Decrypt
+          Resource: !GetAtt KMSKey.Arn
 
 functions:
   Auth:
@@ -77,6 +92,15 @@ functions:
           request:
             schemas:
               application/json: ${file(models/create-todo-model.json)}
+    iamRoleStatementsInherit: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+          - dynamodb:PutItem
+        # Resource: arn:aws:dynamodb:<TABLE-NAME>
+        Resource: !GetAtt TodosTable.Arn
 
   # TODO: Configure this function
   # Provide property for setting up CORS, Authorizer, iamRoleStatements, and request schemas
@@ -86,6 +110,20 @@ functions:
       - http:
           method: patch
           path: todos/{todoId}
+          cors: true
+          authorizer: Auth
+          request:
+            schemas:
+              application/json: ${file(models/update-todo-model.json)}
+    iamRoleStatementsInherit: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+          - dynamodb:PutItem
+        # Resource: arn:aws:dynamodb:<TABLE-NAME>
+        Resource: !GetAtt TodosTable.Arn
 
   # TODO: Configure this function
   # Provide property for setting up CORS, Authorizer, iamRoleStatements
@@ -95,6 +133,17 @@ functions:
       - http:
           method: delete
           path: todos/{todoId}
+          cors: true
+          authorizer: Auth
+    iamRoleStatementsInherit: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+          - dynamodb:PutItem
+        # Resource: arn:aws:dynamodb:<TABLE-NAME>
+        Resource: !GetAtt TodosTable.Arn
 
   # TODO: Configure this function
   # Provide property for setting up CORS, Authorizer, iamRoleStatements
@@ -104,6 +153,17 @@ functions:
       - http:
           method: post
           path: todos/{todoId}/attachment
+          cors: true
+          authorizer: Auth
+    iamRoleStatementsInherit: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+          - dynamodb:PutItem
+        # Resource: arn:aws:dynamodb:<TABLE-NAME>
+        Resource: !GetAtt TodosTable.Arn
 
 resources:
   Resources:
@@ -115,7 +175,7 @@ resources:
       Properties:
         ResponseParameters:
           gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
-          gatewayresponse.header.Access-Control-Allow-Headers: "'COntent-Type,X-Amz-Date,Authorization'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
           gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS,POST'"
         ResponseType: DEFAULT_4XX
         RestApiId:
@@ -173,8 +233,9 @@ resources:
               AllowedMethods:
                 - DELETE
               AllowedOrigins:
-                - "http://www.example.com"
-                - "http://www.example.net"
+                - "*"
+                # - "http://www.example.com"
+                # - "http://www.example.net"
               ExposedHeaders:
                 - Connection
                 - Server
@@ -191,7 +252,7 @@ resources:
     BucketPolicy:
       Type: AWS::S3::BucketPolicy
       Properties:
-        Bucket: !Ref DOC-EXAMPLE-BUCKET
+        Bucket: !Ref AttachmentsBucket
         PolicyDocument:
           Version: 2012-10-17
           Statement:
@@ -201,7 +262,7 @@ resources:
               Resource: !Join
                 - ""
                 - - "arn:aws:s3:::"
-                  - !Ref DOC-EXAMPLE-BUCKET
+                  - !Ref AttachmentsBucket
                   - /*
               Principal: "*"
               Condition:
@@ -209,3 +270,37 @@ resources:
                   "aws:Referer":
                     - "http://www.example.com/*"
                     - "http://example.net/*"
+
+    KMSKey:
+      Type: AWS::KMS::Key
+      Properties:
+        Description: KMS Key to encrypt Auth0 secret
+        KeyPolicy:
+          Version: "2012-10-17"
+          Id: key-default-1
+          Statement:
+            - Sid: Allow administration of the key
+              Effect: Allow
+              Principal:
+                AWS:
+                  Fn::Join:
+                    - ":"
+                    - - "arn:aws:iam"
+                      - Ref: AWS::AccountId
+                      - "root"
+              Action:
+                - "kms:*"
+              Resource: "*"
+
+    KMSKeyAlias:
+      Type: AWS::KMS::Alias
+      Properties:
+        Description: alias/auth0key-$(self:provider.stage)
+        TargetKeyId: !Ref KMSKey
+
+    Auth0Secret:
+      Type: AWS::SecretManager::Secret
+      Properties:
+        Name: $(self:provider.environment.AUTH_0_SECRET_ID)
+        Description: Auth0 secret
+        KMSKeyId: !Ref KMSKey
