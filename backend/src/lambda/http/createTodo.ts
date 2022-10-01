@@ -5,7 +5,7 @@ import * as middy from 'middy'
 import { cors } from 'middy/middlewares'
 import { CreateTodoRequest } from '../../requests/CreateTodoRequest'
 import { getUserId } from '../utils';
-import { createTodo } from '../../businessLogic/todos'
+// import { createTodo } from '../../businessLogic/todos'
 
 const docClient = new AWS.DynamoDB.DocumentClient()
 const todosTable = process.env.TODOS_TABLE

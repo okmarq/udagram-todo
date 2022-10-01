@@ -3,8 +3,7 @@ import * as AWS from 'aws-sdk'
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import * as middy from 'middy'
 import { cors, httpErrorHandler } from 'middy/middlewares'
-
-import { updateTodo } from '../../businessLogic/todos'
+// import { updateTodo } from '../../businessLogic/todos'
 import { UpdateTodoRequest } from '../../requests/UpdateTodoRequest'
 import { getUserId } from '../utils'
 
@@ -17,7 +16,6 @@ export const handler = middy(
     const updatedTodo: UpdateTodoRequest = JSON.parse(event.body)
     const userId = getUserId(event)
     // TODO: Update a TODO item with the provided id using values in the "updatedTodo" object
-
     const validTodoId = await todoExists(todoId)
 
     if (!validTodoId) {
@@ -29,16 +27,16 @@ export const handler = middy(
       }
     }
 
-    // const getTodo = await docClient.query({
-    //   TableName: todosTable,
-    //   IndexName: process.env.TODOS_CREATED_AT_INDEX,
-    //   KeyConditionExpression: 'userId = :userId',
-    //   ExpressionAttributeValues: {
-    //     ':userId': userId
-    //   }
-    // }).promise
+    const getTodo = await docClient.get({
+      TableName: todosTable,
+      Key: {
+        id: todoId
+      }
+    }).promise()
 
     const todoPayload = {
+      "id": getTodo.Item.id,
+      "userId": userId,
       ...updatedTodo
     }
 
@@ -57,7 +55,6 @@ export const handler = middy(
     }
   }
 )
-
 handler
   .use(httpErrorHandler())
   .use(

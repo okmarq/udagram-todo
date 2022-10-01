@@ -7,11 +7,18 @@ plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
   - serverless-plugin-tracing
+  - serverless-reqvalidator-plugin
+  - serverless-aws-documentation
+
+package:
+  individually: true
 
 provider:
   name: aws
   runtime: nodejs12.x
-  lambdaHashingVersion: "20201221"
+  lambdaHashingVersion: '20201221'
+  apiGateway:
+    minimumCompressionSize: 1024
 
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
@@ -44,17 +51,6 @@ provider:
           Resource: "*"
         - Effect: Allow
           Action:
-            - dynamodb:Query
-            - dynamodb:PutItem
-            - dynamodb:GetItem
-          Resource: "*"
-        - Effect: Allow
-          Action:
-            - s3:PutObject
-            - s3:GetObject
-          Resource: "*"
-        - Effect: Allow
-          Action:
             - secretmanager:GetSecretValue
           Resource: !Ref Auth0Secret
         - Effect: Allow
@@ -62,7 +58,23 @@ provider:
             - kms:Decrypt
           Resource: !GetAtt KMSKey.Arn
 
+custom:
+  documentation:
+    api:
+      info:
+        version: v1.0.0
+        title: Udagram API
+        description: Serverless application for Todo app
+    models:
+      - name: TodoRequest
+        contentType: application/json
+        schema: ${file(models/create-todo-model.json)}
+      - name: ImageRequest
+        contentType: application/json
+        schema: ${file(models/create-image-request.json)}
+
 functions:
+
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
 
@@ -76,6 +88,17 @@ functions:
           path: todos
           cors: true
           authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
 
   # TODO: Configure this function -
   # Provide iamRoleStatements property. Decide the Actions and AWS Resource.
@@ -100,7 +123,9 @@ functions:
           - dynamodb:UpdateItem
           - dynamodb:PutItem
         # Resource: arn:aws:dynamodb:<TABLE-NAME>
-        Resource: !GetAtt TodosTable.Arn
+        # Resource: !GetAtt TodosTable.Arn
+        Resource:
+          - "*"
 
   # TODO: Configure this function
   # Provide property for setting up CORS, Authorizer, iamRoleStatements, and request schemas
@@ -123,7 +148,9 @@ functions:
           - dynamodb:UpdateItem
           - dynamodb:PutItem
         # Resource: arn:aws:dynamodb:<TABLE-NAME>
-        Resource: !GetAtt TodosTable.Arn
+        # Resource: !GetAtt TodosTable.Arn
+        Resource:
+          - "*"
 
   # TODO: Configure this function
   # Provide property for setting up CORS, Authorizer, iamRoleStatements
@@ -143,7 +170,9 @@ functions:
           - dynamodb:UpdateItem
           - dynamodb:PutItem
         # Resource: arn:aws:dynamodb:<TABLE-NAME>
-        Resource: !GetAtt TodosTable.Arn
+        # Resource: !GetAtt TodosTable.Arn
+        Resource:
+          - "*"
 
   # TODO: Configure this function
   # Provide property for setting up CORS, Authorizer, iamRoleStatements
@@ -163,7 +192,19 @@ functions:
           - dynamodb:UpdateItem
           - dynamodb:PutItem
         # Resource: arn:aws:dynamodb:<TABLE-NAME>
-        Resource: !GetAtt TodosTable.Arn
+        # Resource: !GetAtt TodosTable.Arn
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+          - s3:GetObject
+        Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource:
+          - "*"
 
 resources:
   Resources:
@@ -214,7 +255,13 @@ resources:
     # Do not forget to add the CorsConfiguration propoerty
     AttachmentsBucket:
       Type: AWS::S3::Bucket
+      # DependsOn: SNSTopicPolicy
       Properties:
+        BucketName: ${self:provider.environment.IMAGES_S3_BUCKET}
+        NotificationConfiguration:
+          TopicConfigurations:
+            - Event: s3:ObjectCreated:Put
+              Topic: !Ref ImagesTopic
         AccessControl: PublicRead
         CorsConfiguration:
           CorsRules:
@@ -222,6 +269,10 @@ resources:
                 - "*"
               AllowedMethods:
                 - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
               AllowedOrigins:
                 - "*"
               ExposedHeaders:
@@ -234,8 +285,6 @@ resources:
                 - DELETE
               AllowedOrigins:
                 - "*"
-                # - "http://www.example.com"
-                # - "http://www.example.net"
               ExposedHeaders:
                 - Connection
                 - Server
@@ -265,11 +314,11 @@ resources:
                   - !Ref AttachmentsBucket
                   - /*
               Principal: "*"
-              Condition:
-                StringLike:
-                  "aws:Referer":
-                    - "http://www.example.com/*"
-                    - "http://example.net/*"
+              # Condition:
+              #   StringLike:
+              #     "aws:Referer":
+              #       - "http://www.example.com/*"
+              #       - "http://example.net/*"
 
     KMSKey:
       Type: AWS::KMS::Key
@@ -284,10 +333,10 @@ resources:
               Principal:
                 AWS:
                   Fn::Join:
-                    - ":"
-                    - - "arn:aws:iam"
-                      - Ref: AWS::AccountId
-                      - "root"
+                  - ":"
+                  - - "arn:aws:iam"
+                    - Ref: AWS::AccountId
+                    - "root"
               Action:
                 - "kms:*"
               Resource: "*"
