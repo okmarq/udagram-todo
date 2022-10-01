@@ -9,12 +9,14 @@ import { getUserId } from '../utils';
 
 const docClient = new AWS.DynamoDB.DocumentClient()
 const todosTable = process.env.TODOS_TABLE
+
 export const handler = middy(
   async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     const newTodo: CreateTodoRequest = JSON.parse(event.body)
     const timestamp = new Date().toISOString()
     const userId = getUserId(event)
     // TODO: Implement creating a new TODO item
+
     const todoPayload = {
       "createdAt": timestamp,
       ...newTodo,
