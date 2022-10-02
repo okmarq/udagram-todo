@@ -78,12 +78,12 @@ custom:
         title: Udagram API
         description: Serverless application for Todo app
     models:
-      - name: TodoRequest
+      - name: CreateTodoRequest
         contentType: application/json
         schema: ${file(models/create-todo-model.json)}
-      - name: ImageRequest
+      - name: UpdateTodoRequest
         contentType: application/json
-        schema: ${file(models/create-image-request.json)}
+        schema: ${file(models/update-todo-model.json)}
 
 functions:
 
@@ -232,7 +232,7 @@ functions:
         Action:
           - s3:PutObject
           - s3:GetObject
-        Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*
+        Resource: arn:aws:s3:::${self:provider.environment.ATTACHMENT_S3_BUCKET}/*
       - Effect: "Allow"
         Action:
           - "xray:PutTraceSegments"
@@ -290,7 +290,7 @@ resources:
     AttachmentsBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: ${self:provider.environment.IMAGES_S3_BUCKET}
+        BucketName: ${self:provider.environment.ATTACHMENT_S3_BUCKET}
         NotificationConfiguration:
           TopicConfigurations:
             - Event: s3:ObjectCreated:Put
