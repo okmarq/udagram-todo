@@ -58,7 +58,7 @@ export async function deleteTodo(user: string, todoId: string): Promise<void> {
 	return todoAccess.deleteTodo(userId, todoId)
 }
 
-export async function generateUploadUrl(user: string, todoId: string): Promise<string> {
+export async function createAttachmentPresignedUrl(user: string, todoId: string): Promise<string> {
 	const userId = user
 	const bucketName = process.env.IMAGES_S3_BUCKET
 	const urlExpiration = parseInt(process.env.SIGNED_URL_EXPIRATION, 10)
