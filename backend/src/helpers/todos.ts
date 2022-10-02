@@ -69,5 +69,6 @@ export async function createAttachmentPresignedUrl(user: string, todoId: string)
 		Expires: urlExpiration
 	})
 	await todoAccess.saveImgUrl(userId, todoId, bucketName)
+	logger.info('Successfully created signed url.')
 	return signedUrl
 }
