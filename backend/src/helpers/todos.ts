@@ -24,9 +24,14 @@ export async function getTodosForUser(user: string): Promise<TodoItem[]> {
 	}
 }
 
-export async function getTodo(user: string, todoId: string): Promise<TodoItem> {
+export async function getTodoForUser(user: string, todoId: string): Promise<TodoItem> {
 	const userId: string = user
-	return todoAccess.getTodo(userId, todoId)
+	try {
+		logger.info(`Successfully retrieved todo item: ${todoId}`)
+		return todoAccess.getTodo(userId, todoId)
+	} catch (error) {
+		logger.error(`Error: ${error.message}`)
+	}
 }
 
 export async function createTodo(user: string, newTodoData: CreateTodoRequest): Promise<TodoItem> {
