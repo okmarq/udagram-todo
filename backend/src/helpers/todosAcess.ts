@@ -14,7 +14,7 @@ const logger = createLogger('TodosAccess')
 export class TodoAccess {
 
 	constructor(
-		private readonly docClient: DocumentClient = new XAWS.DynamoDB.DocumentClient(),
+		private readonly docClient: DocumentClient = new AWS.DynamoDB.DocumentClient(),
 		private readonly todosTable = process.env.TODOS_TABLE) { }
 
 	async getTodos(userId: string): Promise<TodoItem[]> {
