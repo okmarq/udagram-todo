@@ -21,7 +21,7 @@ export const handler = middy(
         create
       })
     }
-
+  }
 )
 
 handler.use(
