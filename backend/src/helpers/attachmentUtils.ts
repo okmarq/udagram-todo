@@ -8,7 +8,7 @@ const XAWS = AWSXRay.captureAWS(AWS)
 // TODO: Implement the fileStorage logic
 const s3 = new XAWS.S3()
 
-const imagesBucketName = process.env.IMAGES_S3_BUCKET
+const imagesBucketName = process.env.ATTACHMENT_S3_BUCKET
 const thumbnailBucketName = process.env.THUMBNAILS_S3_BUCKET
 
 export const handler: SNSHandler = async (event: SNSEvent) => {
