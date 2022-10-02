@@ -14,15 +14,13 @@ const todoAccess = new TodoAccess()
 
 const logger = createLogger('todos')
 
-export async function getTodos(user: string): Promise<TodoItem[]> {
+export async function getTodosForUser(user: string): Promise<TodoItem[]> {
 	const userId: string = user
 	try {
+		logger.info('Successfully retrieved todolist')
 		return todoAccess.getTodos(userId)
 	} catch (error) {
 		logger.error(`Error: ${error.message}`)
-		// return {
-		// 	createError
-		// }
 	}
 }
 
@@ -37,10 +35,13 @@ export async function createTodo(user: string, newTodoData: CreateTodoRequest): 
 	const createdAt = new Date().toISOString()
 	const done = false
 	const newTodo: TodoItem = { todoId, userId, createdAt, done, ...newTodoData }
+	try {
+		logger.info('Successfully created a new todo item.')
 
-	logger.info('Successfully created a new todo item.')
-
-	return todoAccess.createTodo(newTodo)
+		return todoAccess.createTodo(newTodo)
+	} catch (error) {
+		logger.error(`Error: ${error.message}`)
+	}
 }
 
 export async function updateTodo(
@@ -49,7 +50,11 @@ export async function updateTodo(
 	updateData: UpdateTodoRequest
 ): Promise<void> {
 	const userId = user
-	return todoAccess.updateTodo(userId, todoId, updateData)
+	try {
+		return todoAccess.updateTodo(userId, todoId, updateData)
+	} catch (error) {
+		logger.error(`Error: ${error.message}`)
+	}
 }
 
 export async function deleteTodo(user: string, todoId: string): Promise<void> {
@@ -68,7 +73,11 @@ export async function createAttachmentPresignedUrl(user: string, todoId: string)
 		Key: todoId,
 		Expires: urlExpiration
 	})
-	await todoAccess.saveImgUrl(userId, todoId, bucketName)
-	logger.info('Successfully created signed url.')
-	return signedUrl
+	try {
+		await todoAccess.saveImgUrl(userId, todoId, bucketName)
+		logger.info('Successfully created signed url.')
+		return signedUrl
+	} catch (error) {
+		logger.error(`Error: ${error.message}`)
+	}
 }
