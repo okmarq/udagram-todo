@@ -1,11 +1,12 @@
 import { TodoAccess } from './todosAcess'
-import { AttachmentUtils } from './attachmentUtils'
+// import { AttachmentUtils } from './attachmentUtils'
 import { TodoItem } from '../models/TodoItem'
 import { CreateTodoRequest } from '../requests/CreateTodoRequest'
 import { UpdateTodoRequest } from '../requests/UpdateTodoRequest'
 import { createLogger } from '../utils/logger'
 import * as uuid from 'uuid'
 import * as createError from 'http-errors'
+import * as AWS from 'aws-sdk'
 
 // TODO: Implement businessLogic
 
@@ -15,7 +16,14 @@ const logger = createLogger('todos')
 
 export async function getTodos(user: string): Promise<TodoItem[]> {
 	const userId: string = user
-	return todoAccess.getTodos(userId)
+	try {
+		return todoAccess.getTodos(userId)
+	} catch (error) {
+		logger.error(`Error: ${error.message}`)
+		// return {
+		// 	createError
+		// }
+	}
 }
 
 export async function getTodo(user: string, todoId: string): Promise<TodoItem> {
@@ -46,6 +54,7 @@ export async function updateTodo(
 
 export async function deleteTodo(user: string, todoId: string): Promise<void> {
 	const userId = user
+	logger.info(`Successfully deleted todo item: ${todoId}`)
 	return todoAccess.deleteTodo(userId, todoId)
 }
 
