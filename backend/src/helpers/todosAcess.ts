@@ -5,7 +5,7 @@ import { createLogger } from '../utils/logger'
 import { TodoItem } from '../models/TodoItem'
 import { TodoUpdate } from '../models/TodoUpdate'
 
-const XAWS = AWSXRay.captureAWS(AWS)
+// const XAWS = AWSXRay.captureAWS(AWS)
 
 const logger = createLogger('TodosAccess')
 

@@ -1,7 +1,8 @@
 # TODO: Change the name of the org
-org: sudkul
+org: okmarq
 app: serverless-todo-app
 service: serverless-todo-app
+configValidationMode: error
 
 plugins:
   - serverless-webpack
@@ -16,12 +17,12 @@ package:
 provider:
   name: aws
   runtime: nodejs12.x
-  lambdaHashingVersion: '20201221'
+  # lambdaHashingVersion: '20201221'
   apiGateway:
     minimumCompressionSize: 1024
 
   stage: ${opt:stage, 'dev'}
-  region: ${opt:region, 'us-east-1'}
+  region: ${opt:region, 'us-east-2'}
 
   tracing:
     lambda: true
@@ -61,14 +62,14 @@ provider:
             - s3:PutObject
             - s3:GetObject
           Resource: "*"
-        - Effect: Allow
-          Action:
-            - secretmanager:GetSecretValue
-          Resource: !Ref Auth0Secret
-        - Effect: Allow
-          Action:
-            - kms:Decrypt
-          Resource: !GetAtt KMSKey.Arn
+        # - Effect: Allow
+        #   Action:
+        #     - secretmanager:GetSecretValue
+        #   Resource: !Ref Auth0Secret
+        # - Effect: Allow
+        #   Action:
+        #     - kms:Decrypt
+        #   Resource: !GetAtt KMSKey.Arn
 
 custom:
   documentation:
@@ -92,121 +93,126 @@ functions:
 
   # TODO: Configure this function -
   # Provide iamRoleStatements property for performing Actions on DynamoDB
-  GetTodos:
-    handler: src/lambda/http/getTodos.handler
-    events:
-      - http:
-          method: get
-          path: todos
-          cors: true
-          authorizer: Auth
-    iamRoleStatements:
-      - Effect: Allow
-        Action:
-          - dynamodb:Query
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
-      - Effect: "Allow"
-        Action:
-          - "xray:PutTraceSegments"
-          - "xray:PutTelemetryRecords"
-        Resource:
-          - "*"
+  # GetTodos:
+  #   handler: src/lambda/http/getTodos.handler
+  #   events:
+  #     - http:
+  #         method: get
+  #         path: todos
+  #         cors: true
+  #         authorizer: Auth
+  #         reqValidatorName: RequestBodyValidator
+  #   iamRoleStatements:
+  #     - Effect: Allow
+  #       Action:
+  #         - dynamodb:Query
+  #       Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+  #     - Effect: "Allow"
+  #       Action:
+  #         - "xray:PutTraceSegments"
+  #         - "xray:PutTelemetryRecords"
+  #       Resource:
+  #         - "*"
 
   # TODO: Configure this function -
   # Provide iamRoleStatements property for performing Actions on DynamoDB
-  GetTodo:
-    handler: src/lambda/http/getTodo.handler
-    events:
-      - http:
-          method: get
-          path: todo
-          cors: true
-          authorizer: Auth
-    iamRoleStatements:
-      - Effect: Allow
-        Action:
-          - dynamodb:Query
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
-      - Effect: "Allow"
-        Action:
-          - "xray:PutTraceSegments"
-          - "xray:PutTelemetryRecords"
-        Resource:
-          - "*"
+  # GetTodo:
+  #   handler: src/lambda/http/getTodo.handler
+  #   events:
+  #     - http:
+  #         method: get
+  #         path: todo
+  #         cors: true
+  #         authorizer: Auth
+  #         reqValidatorName: RequestBodyValidator
+  #   iamRoleStatements:
+  #     - Effect: Allow
+  #       Action:
+  #         - dynamodb:Query
+  #       Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+  #     - Effect: "Allow"
+  #       Action:
+  #         - "xray:PutTraceSegments"
+  #         - "xray:PutTelemetryRecords"
+  #       Resource:
+  #         - "*"
 
   # TODO: Configure this function -
   # Provide iamRoleStatements property. Decide the Actions and AWS Resource.
   # To refer to an AWS resource defined in the "Resources" section, you can use "Resource: !GetAtt <resource-name>.Arn"
   # To validate incoming HTTP requests, we have provided the request schemas in function definition below.
-  CreateTodo:
-    handler: src/lambda/http/createTodo.handler
-    events:
-      - http:
-          method: post
-          path: todos
-          cors: true
-          authorizer: Auth
-          request:
-            schemas:
-              application/json: ${file(models/create-todo-model.json)}
-    iamRoleStatementsInherit: true
-    iamRoleStatements:
-      - Effect: Allow
-        Action:
-          - dynamodb:GetItem
-          - dynamodb:UpdateItem
-          - dynamodb:PutItem
-        # Resource: arn:aws:dynamodb:<TABLE-NAME>
-        # Resource: !GetAtt TodosTable.Arn
-        Resource:
-          - "*"
+  # CreateTodo:
+  #   handler: src/lambda/http/createTodo.handler
+  #   events:
+  #     - http:
+  #         method: post
+  #         path: todos
+  #         cors: true
+  #         authorizer: Auth
+  #         reqValidatorName: RequestBodyValidator
+  #         request:
+  #           schemas:
+  #             application/json: ${file(models/create-todo-model.json)}
+  #   iamRoleStatementsInherit: true
+  #   iamRoleStatements:
+  #     - Effect: Allow
+  #       Action:
+  #         - dynamodb:GetItem
+  #         - dynamodb:UpdateItem
+  #         - dynamodb:PutItem
+  #       # Resource: arn:aws:dynamodb:<TABLE-NAME>
+  #       # Resource: !GetAtt TodosTable.Arn
+  #       Resource:
+  #         - "*"
 
   # TODO: Configure this function
   # Provide property for setting up CORS, Authorizer, iamRoleStatements, and request schemas
-  UpdateTodo:
-    handler: src/lambda/http/updateTodo.handler
-    events:
-      - http:
-          method: patch
-          path: todos/{todoId}
-          cors: true
-          authorizer: Auth
-          request:
-            schemas:
-              application/json: ${file(models/update-todo-model.json)}
-    iamRoleStatementsInherit: true
-    iamRoleStatements:
-      - Effect: Allow
-        Action:
-          - dynamodb:GetItem
-          - dynamodb:UpdateItem
-          - dynamodb:PutItem
-        # Resource: arn:aws:dynamodb:<TABLE-NAME>
-        # Resource: !GetAtt TodosTable.Arn
-        Resource:
-          - "*"
+  # UpdateTodo:
+  #   handler: src/lambda/http/updateTodo.handler
+  #   events:
+  #     - http:
+  #         method: patch
+  #         path: todos/{todoId}
+  #         cors: true
+  #         authorizer: Auth
+  #         reqValidatorName: RequestBodyValidator
+  #         request:
+  #           schemas:
+  #             application/json: ${file(models/update-todo-model.json)}
+  #   iamRoleStatementsInherit: true
+  #   iamRoleStatements:
+  #     - Effect: Allow
+  #       Action:
+  #         - dynamodb:GetItem
+  #         - dynamodb:UpdateItem
+  #         - dynamodb:PutItem
+  #       # Resource: arn:aws:dynamodb:<TABLE-NAME>
+  #       # Resource: !GetAtt TodosTable.Arn
+  #       Resource:
+  #         - "*"
 
   # TODO: Configure this function
   # Provide property for setting up CORS, Authorizer, iamRoleStatements
-  DeleteTodo:
-    handler: src/lambda/http/deleteTodo.handler
-    events:
-      - http:
-          method: delete
-          path: todos/{todoId}
-          cors: true
-          authorizer: Auth
-    iamRoleStatementsInherit: true
-    iamRoleStatements:
-      - Effect: Allow
-        Action:
-          - dynamodb:GetItem
-          - dynamodb:UpdateItem
-          - dynamodb:PutItem
-        # Resource: arn:aws:dynamodb:<TABLE-NAME>
-        # Resource: !GetAtt TodosTable.Arn
-        Resource:
-          - "*"
+  # DeleteTodo:
+  #   handler: src/lambda/http/deleteTodo.handler
+  #   events:
+  #     - http:
+  #         method: delete
+  #         path: todos/{todoId}
+  #         cors: true
+  #         authorizer: Auth
+  #         reqValidatorName: RequestBodyValidator
+  #   iamRoleStatementsInherit: true
+  #   iamRoleStatements:
+  #     - Effect: Allow
+  #       Action:
+  #         - dynamodb:GetItem
+  #         - dynamodb:UpdateItem
+  #         - dynamodb:PutItem
+  #       # Resource: arn:aws:dynamodb:<TABLE-NAME>
+  #       # Resource: !GetAtt TodosTable.Arn
+  #       Resource:
+  #         - "*"
 
   # TODO: Configure this function
   # Provide property for setting up CORS, Authorizer, iamRoleStatements
@@ -218,6 +224,7 @@ functions:
           path: todos/{todoId}/attachment
           cors: true
           authorizer: Auth
+          reqValidatorName: RequestBodyValidator
     iamRoleStatementsInherit: true
     iamRoleStatements:
       - Effect: Allow
@@ -285,17 +292,26 @@ resources:
             Projection:
               ProjectionType: ALL # What attributes will be copied to an index
 
+    RequestBodyValidator:
+      Type: AWS::ApiGateway::RequestValidator
+      Properties:
+        Name: 'request-body-validator'
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ValidateRequestBody: true
+        ValidateRequestParameters: false
+
     # TODO: Complete the bucket properties below.
     # Do not forget to add the CorsConfiguration propoerty
     AttachmentsBucket:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: ${self:provider.environment.ATTACHMENT_S3_BUCKET}
-        NotificationConfiguration:
-          TopicConfigurations:
-            - Event: s3:ObjectCreated:Put
-              Topic: !Ref ImagesTopic
-        AccessControl: PublicRead
+        # NotificationConfiguration:
+        #   TopicConfigurations:
+        #     - Event: s3:ObjectCreated:Put
+        #       Topic: !Ref ImagesTopic
+        # AccessControl: PublicRead
         CorsConfiguration:
           CorsRules:
             - AllowedHeaders:
@@ -324,10 +340,10 @@ resources:
                 - Date
               Id: myCORSRuleId2
               MaxAge: 1800
-  Outputs:
-    BucketName:
-      Value: !Ref S3Bucket
-      Description: Name of the sample Amazon S3 bucket with CORS enabled.
+  # Outputs:
+  #   BucketName:
+  #     Value: !Ref S3Bucket
+  #     Description: Name of the sample Amazon S3 bucket with CORS enabled.
 
     # TODO: Complete the policy below and attach it to the bucket defined above
     # For cross referencing the name of the bucket, use "!Ref AttachmentsBucket"
@@ -348,36 +364,36 @@ resources:
                   - /*
               Principal: "*"
 
-    KMSKey:
-      Type: AWS::KMS::Key
-      Properties:
-        Description: KMS Key to encrypt Auth0 secret
-        KeyPolicy:
-          Version: "2012-10-17"
-          Id: key-default-1
-          Statement:
-            - Sid: Allow administration of the key
-              Effect: Allow
-              Principal:
-                AWS:
-                  Fn::Join:
-                  - ":"
-                  - - "arn:aws:iam"
-                    - Ref: AWS::AccountId
-                    - "root"
-              Action:
-                - "kms:*"
-              Resource: "*"
+    # KMSKey:
+    #   Type: AWS::KMS::Key
+    #   Properties:
+    #     Description: KMS Key to encrypt Auth0 secret
+    #     KeyPolicy:
+    #       Version: "2012-10-17"
+    #       Id: key-default-1
+    #       Statement:
+    #         - Sid: Allow administration of the key
+    #           Effect: Allow
+    #           Principal:
+    #             AWS:
+    #               Fn::Join:
+    #               - ":"
+    #               - - "arn:aws:iam"
+    #                 - Ref: AWS::AccountId
+    #                 - "root"
+    #           Action:
+    #             - "kms:*"
+    #           Resource: "*"
 
-    KMSKeyAlias:
-      Type: AWS::KMS::Alias
-      Properties:
-        Description: alias/auth0key-$(self:provider.stage)
-        TargetKeyId: !Ref KMSKey
+    # KMSKeyAlias:
+    #   Type: AWS::KMS::Alias
+    #   Properties:
+    #     Description: alias/auth0key-$(self:provider.stage)
+    #     TargetKeyId: !Ref KMSKey
 
-    Auth0Secret:
-      Type: AWS::SecretManager::Secret
-      Properties:
-        Name: $(self:provider.environment.AUTH_0_SECRET_ID)
-        Description: Auth0 secret
-        KMSKeyId: !Ref KMSKey
+    # Auth0Secret:
+    #   Type: AWS::SecretManager::Secret
+    #   Properties:
+    #     Name: $(self:provider.environment.AUTH_0_SECRET_ID)
+    #     Description: Auth0 secret
+    #     KMSKeyId: !Ref KMSKey

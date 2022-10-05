@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Serverless TODO image app",
   "scripts": {
-    "pretty": "./node_modules/.bin/prettier --write './**/*.{ts,json,md}'"
+    "build": "--max-old-space-size=8192"
   },
   "dependencies": {
     "aws-xray-sdk": "^3.3.7",
