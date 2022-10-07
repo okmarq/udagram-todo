@@ -1,73 +1,99 @@
-import * as React from 'react'
-import { Form, Button } from 'semantic-ui-react'
-import Auth from '../auth/Auth'
-import { getUploadUrl, uploadFile } from '../api/todos-api'
+import * as React from 'react';
+import { Form, Button } from 'semantic-ui-react';
+import Auth from '../auth/Auth';
+import { getUploadUrl, uploadFile, getTodo } from '../api/todos-api';
+import { TodoItem } from '../types/Todo.d';
 
 enum UploadState {
   NoUpload,
   FetchingPresignedUrl,
-  UploadingFile,
+  UploadingFile
 }
 
 interface EditTodoProps {
   match: {
     params: {
-      todoId: string
-    }
-  }
-  auth: Auth
+      todoId: string;
+    };
+  };
+  auth: Auth;
 }
 
 interface EditTodoState {
-  file: any
-  uploadState: UploadState
+  todo: TodoItem;
+  file: any;
+  uploadState: UploadState;
 }
 
-export class EditTodo extends React.PureComponent<
-  EditTodoProps,
-  EditTodoState
-> {
+export class EditTodo extends React.PureComponent<EditTodoProps, EditTodoState> {
   state: EditTodoState = {
+    todo: {
+      userId: '',
+      createdAt: '',
+      todoId: '',
+      name: '',
+      dueDate: '',
+      done: false,
+      attachmentUrl: ''
+    },
     file: undefined,
     uploadState: UploadState.NoUpload
+  };
+
+  async componentDidMount() {
+    const idToken = this.props.auth.getIdToken();
+    const todoId = this.props.match.params.todoId;
+    try {
+      const todo = await getTodo(idToken, todoId);
+      this.setState({ todo });
+    } catch (e) {
+      if (e instanceof Error)
+        console.error(`Failed to fetch todo (${todoId}):  ${e.message}`);
+    }
   }
 
   handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files
-    if (!files) return
+    const files = event.target.files;
+    if (!files) return;
 
     this.setState({
       file: files[0]
-    })
-  }
+    });
+  };
 
   handleSubmit = async (event: React.SyntheticEvent) => {
-    event.preventDefault()
+    event.preventDefault();
 
     try {
       if (!this.state.file) {
-        alert('File should be selected')
-        return
+        alert('File should be selected');
+        return;
       }
 
-      this.setUploadState(UploadState.FetchingPresignedUrl)
-      const uploadUrl = await getUploadUrl(this.props.auth.getIdToken(), this.props.match.params.todoId)
+      this.setUploadState(UploadState.FetchingPresignedUrl);
+      const uploadUrl = await getUploadUrl(
+        this.props.auth.getIdToken(),
+        this.props.match.params.todoId
+      );
 
-      this.setUploadState(UploadState.UploadingFile)
-      await uploadFile(uploadUrl, this.state.file)
+      this.setUploadState(UploadState.UploadingFile);
+      await uploadFile(uploadUrl, this.state.file);
 
-      alert('File was uploaded!')
+      alert('File was uploaded!');
     } catch (e) {
-      alert('Could not upload a file: ' + (e as Error).message)
+      if (e instanceof Error)
+        alert('Could not upload a file: ' + e.message);
+      else {
+        console.log('Unexpected error')}
     } finally {
-      this.setUploadState(UploadState.NoUpload)
+      this.setUploadState(UploadState.NoUpload);
     }
-  }
+  };
 
   setUploadState(uploadState: UploadState) {
     this.setState({
       uploadState
-    })
+    });
   }
 
   render() {
@@ -89,22 +115,20 @@ export class EditTodo extends React.PureComponent<
           {this.renderButton()}
         </Form>
       </div>
-    )
+    );
   }
 
   renderButton() {
-
     return (
       <div>
-        {this.state.uploadState === UploadState.FetchingPresignedUrl && <p>Uploading image metadata</p>}
+        {this.state.uploadState === UploadState.FetchingPresignedUrl && (
+          <p>Uploading image metadata</p>
+        )}
         {this.state.uploadState === UploadState.UploadingFile && <p>Uploading file</p>}
-        <Button
-          loading={this.state.uploadState !== UploadState.NoUpload}
-          type="submit"
-        >
+        <Button loading={this.state.uploadState !== UploadState.NoUpload} type="submit">
           Upload
         </Button>
       </div>
-    )
+    );
   }
 }

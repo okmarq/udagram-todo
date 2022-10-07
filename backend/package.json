@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "Serverless TODO image app",
   "scripts": {
-    "build": "--max-old-space-size=8192"
+    "pretty": "./node_modules/.bin/prettier --write './**/*.{ts,json,md}'"
   },
   "dependencies": {
-    "aws-xray-sdk": "^3.3.7",
+    "aws-xray-sdk": "^3.3.8",
     "axios": "^0.27.2",
     "http-errors": "^1.8.1",
     "jsonwebtoken": "^8.5.1",
@@ -17,21 +17,21 @@
     "winston": "^3.8.2"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.104",
+    "@types/aws-lambda": "^8.10.106",
     "@types/axios": "^0.14.0",
     "@types/http-errors": "^1.8.2",
     "@types/jsonwebtoken": "^8.5.9",
-    "@types/node": "^14.18.29",
-    "aws-sdk": "^2.1221.0",
+    "@types/node": "^14.18.31",
+    "aws-sdk": "^2.1230.0",
     "prettier": "^2.7.1",
     "serverless-aws-documentation": "^1.1.0",
-    "serverless-iam-roles-per-function": "^3.2.0-e97ab49",
+    "serverless-iam-roles-per-function": "^3.2.0",
     "serverless-plugin-canary-deployments": "^0.4.8",
     "serverless-plugin-tracing": "^2.0.0",
     "serverless-reqvalidator-plugin": "^2.0.0",
-    "serverless-webpack": "^5.9.1",
+    "serverless-webpack": "^5.10.0",
     "ts-loader": "^8.4.0",
-    "typescript": "^4.8.3",
+    "typescript": "^4.8.4",
     "webpack": "^5.74.0"
   },
   "author": "Ivan Mushketyk",

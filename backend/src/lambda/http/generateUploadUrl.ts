@@ -1,33 +1,36 @@
-import 'source-map-support/register'
+import 'source-map-support/register';
+import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler } from 'aws-lambda';
+import { generateUploadUrl } from '../../businessLogic/todos';
+import { createLogger } from '../../utils/logger';
+import { getToken } from '../../utils/getJwt';
 
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-import * as middy from 'middy'
-import { cors, httpErrorHandler } from 'middy/middlewares'
+const logger = createLogger('GenerateUploadUrl');
 
-import { createAttachmentPresignedUrl } from '../../helpers/todos'
-import { getUserId } from '../utils'
+export const handler: APIGatewayProxyHandler = async (
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> => {
+  logger.info('Processing GenerateUploadUrl event...');
+  const jwtToken: string = getToken(event);
+  const todoId = event.pathParameters.todoId;
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Credentials': true
+  };
 
-export const handler = middy(
-  async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    const todoId = event.pathParameters.todoId
-    // TODO: Return a presigned URL to upload a file for a TODO item with the provided id
-    const userId: string = getUserId(event)
-
-    const signedUrl: string = await createAttachmentPresignedUrl(userId, todoId)
-
+  try {
+    const signedUrl: string = await generateUploadUrl(jwtToken, todoId);
+    logger.info('Successfully created signed url.');
     return {
       statusCode: 201,
-      body: JSON.stringify({
-        uploadUrl: signedUrl
-      })
-    }
+      headers,
+      body: JSON.stringify({ uploadUrl: signedUrl })
+    };
+  } catch (error) {
+    logger.error(`Error: ${error.message}`);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error })
+    };
   }
-)
-
-handler
-  .use(httpErrorHandler())
-  .use(
-    cors({
-      credentials: true
-    })
-  )
+};
